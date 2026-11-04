@@ -1,0 +1,722 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Editar PDF</title>
+<meta name="theme-color" content="#8f3a1e">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="icon-192.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:wght@400;700&family=Bricolage+Grotesque:opsz,wght@12..96,700;12..96,800&display=swap" rel="stylesheet">
+<style>
+/* Layout: uma coluna no celular (escolher → tocar no texto → imprimir); no computador a folha fica à esquerda e a lista de textos à direita */
+:root{
+  --bg:#f6f2ef; --surface:#ffffff; --ink:#24191a; --muted:#6a5a56; --line:#e3d8d2;
+  --accent:#a6431f; --accent-ink:#ffffff; --accent-soft:#f8e6dd;
+  --desk:#4a3a36; --desk-line:rgba(255,255,255,.07); --desk-ink:#f1e5df;
+  --hl:rgba(255,196,0,.22); --hl-line:rgba(214,150,0,.75); --ok:#1f7a4d; --ok-soft:rgba(31,122,77,.18);
+  --warn:#8a4b00; --warn-bg:#fff1dc; --danger:#b3261e;
+  --f-display:"Bricolage Grotesque","Segoe UI",Roboto,sans-serif;
+  --f-body:"Atkinson Hyperlegible","Segoe UI",Roboto,Verdana,sans-serif;
+  --r:12px;
+  color-scheme:light;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#171211; --surface:#221b19; --ink:#f2e9e5; --muted:#b4a39d; --line:#3a2f2c;
+    --accent:#f08a63; --accent-ink:#2a0f05; --accent-soft:#3b2219;
+    --desk:#2b221f; --desk-line:rgba(255,255,255,.05); --desk-ink:#e7d8d1;
+    --ok:#5fd39a; --ok-soft:rgba(95,211,154,.2);
+    --warn:#f2b866; --warn-bg:#33270f; --danger:#ff8c82;
+    color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#171211; --surface:#221b19; --ink:#f2e9e5; --muted:#b4a39d; --line:#3a2f2c;
+  --accent:#f08a63; --accent-ink:#2a0f05; --accent-soft:#3b2219;
+  --desk:#2b221f; --desk-line:rgba(255,255,255,.05); --desk-ink:#e7d8d1;
+  --ok:#5fd39a; --ok-soft:rgba(95,211,154,.2);
+  --warn:#f2b866; --warn-bg:#33270f; --danger:#ff8c82;
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:17px;line-height:1.45;
+  padding:20px 16px 40px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));
+  -webkit-text-size-adjust:100%}
+[hidden]{display:none!important}
+button,input,textarea{font:inherit;color:inherit}
+:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
+.screen{max-width:1200px;margin:0 auto}
+h1{font-family:var(--f-display);font-weight:800;font-size:32px;line-height:1.05;margin:0;letter-spacing:-.01em}
+@media (min-width:700px){h1{font-size:40px}}
+.top p{margin:6px 0 18px;color:var(--muted);max-width:62ch}
+.step{display:flex;align-items:center;margin:8px 0 12px}
+.step .num{flex:none;width:36px;height:36px;border-radius:50%;background:var(--ink);color:var(--bg);display:flex;align-items:center;justify-content:center;font-family:var(--f-display);font-weight:800;font-size:19px;margin-right:12px}
+.step h2{font-family:var(--f-display);font-weight:700;font-size:22px;margin:0;line-height:1.15}
+
+.btn{display:inline-flex;align-items:center;justify-content:center;min-height:48px;padding:8px 16px;border-radius:10px;border:1.5px solid var(--line);background:var(--surface);cursor:pointer;font-weight:700;text-decoration:none;color:var(--ink);-webkit-tap-highlight-color:transparent}
+.btn:hover{border-color:var(--accent)}
+.btn svg{width:22px;height:22px;margin-right:8px;flex:none}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+.btn.big{min-height:60px;font-size:20px;width:100%}
+.btn.big svg{width:26px;height:26px}
+.btn.off{opacity:.45;pointer-events:none}
+.btn.danger{color:var(--danger)}
+.linkbtn{background:none;border:0;padding:6px 2px;color:var(--accent);text-decoration:underline;cursor:pointer;font-size:16px}
+
+.drop{position:relative;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;border:2.5px dashed var(--accent);border-radius:var(--r);background:var(--accent-soft);padding:30px 16px}
+.drop svg{width:46px;height:46px;color:var(--accent);margin-bottom:6px}
+.drop strong{font-size:20px;color:var(--accent)}
+.drop span{color:var(--muted);font-size:15px;margin-top:4px;max-width:44ch}
+.drop input[type=file]{position:absolute;left:0;top:0;width:100%;height:100%;opacity:0;cursor:pointer;font-size:0;z-index:2}
+.drop.busy{opacity:.6}
+.note{margin:10px 0 0;color:var(--muted);font-size:15px}
+.err{margin:12px 0 0;background:var(--warn-bg);color:var(--warn);border-radius:10px;padding:12px 14px;font-size:16px}
+
+.filebar{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:10px 14px;margin-bottom:14px}
+.filebar .fn{font-weight:700;overflow-wrap:anywhere;min-width:0;flex:1;margin-right:10px}
+.filebar .fn small{display:block;font-weight:400;color:var(--muted);font-size:14px}
+
+.work{display:block}
+@media (min-width:980px){.work{display:grid;grid-template-columns:minmax(0,1.1fr) minmax(0,.9fr);grid-gap:28px;gap:28px;align-items:start}
+  .side{position:sticky;top:12px;max-height:calc(100vh - 24px);overflow:auto}}
+.desk{background-color:var(--desk);background-image:linear-gradient(var(--desk-line) 1px,transparent 1px),linear-gradient(90deg,var(--desk-line) 1px,transparent 1px);background-size:24px 24px;border-radius:var(--r);padding:14px 10px}
+.pg{position:relative;margin:0 auto 26px;background:#fff;box-shadow:0 6px 18px rgba(0,0,0,.35)}
+.pg:last-child{margin-bottom:6px}
+.pg canvas{display:block;width:100%;height:100%}
+.pg .lbl{position:absolute;left:0;right:0;bottom:-22px;text-align:center;color:var(--desk-ink);font-size:13px}
+.hit{position:absolute;border:0;padding:0;margin:0;background:var(--hl);box-shadow:inset 0 -2px 0 var(--hl-line);cursor:pointer;border-radius:2px;-webkit-tap-highlight-color:transparent}
+.hit.ed{background:var(--ok-soft);box-shadow:inset 0 0 0 1.5px var(--ok)}
+.hit.sel{background:rgba(166,67,31,.25);box-shadow:inset 0 0 0 2px var(--accent)}
+.hint{margin:10px 0 14px;color:var(--muted);font-size:15px}
+.zoomrow{display:flex;justify-content:flex-end;margin-bottom:8px}
+.zoomrow .btn{min-height:40px;font-size:15px;padding:4px 12px}
+
+.list{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);overflow:hidden}
+.list .lh{display:flex;align-items:center;padding:10px 12px;border-bottom:1px solid var(--line)}
+.list .lh input{flex:1;min-width:0;min-height:44px;border:1.5px solid var(--line);border-radius:10px;background:var(--bg);padding:6px 12px;font-size:16px}
+.list .lh input:focus{border-color:var(--accent);outline:none}
+.items{max-height:420px;overflow-y:auto;-webkit-overflow-scrolling:touch}
+@media (min-width:980px){.items{max-height:none}}
+.it{display:block;width:100%;text-align:left;border:0;border-bottom:1px solid var(--line);background:none;padding:10px 14px;cursor:pointer;font-size:16px;line-height:1.3}
+.it:last-child{border-bottom:0}
+.it:hover{background:var(--accent-soft)}
+.it .t{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.it .t.b{font-weight:700}
+.it .m{display:block;font-size:13px;color:var(--muted);margin-top:2px}
+.it .old{text-decoration:line-through;color:var(--muted)}
+.tag{display:inline-block;font-size:12px;font-weight:700;border-radius:999px;padding:1px 8px;margin-right:6px;background:var(--ok-soft);color:var(--ok)}
+.tag.del{background:var(--warn-bg);color:var(--warn)}
+.empty{padding:14px;color:var(--muted)}
+
+.printbox{margin-top:16px}
+.printbox > *{margin-bottom:12px}
+.pdfstatus{margin:0;border-radius:10px;padding:10px 12px;background:var(--accent-soft);color:var(--ink);font-size:16px}
+.changes{color:var(--muted);font-size:15px;margin:0}
+.tips{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:10px 14px}
+.tips summary{font-weight:700;cursor:pointer;min-height:36px;line-height:36px}
+.tips ol{margin:6px 0 4px;padding-left:22px}
+.tips li{margin-bottom:4px}
+
+/* Editor do texto (sobe por baixo) */
+.sheet{position:fixed;left:0;right:0;bottom:0;z-index:40;background:var(--surface);border-top-left-radius:18px;border-top-right-radius:18px;box-shadow:0 -8px 30px rgba(0,0,0,.3);padding:14px 16px;padding-bottom:max(14px,env(safe-area-inset-bottom,0px));max-height:80%;overflow-y:auto}
+@media (min-width:720px){.sheet{left:50%;width:640px;margin-left:-320px}}
+.sheet h2{margin:0 0 8px;font-family:var(--f-display);font-size:20px}
+.orig{background:var(--bg);border-radius:10px;padding:8px 12px;font-size:15px;color:var(--muted);margin-bottom:10px;word-break:break-word}
+.orig b{color:var(--ink)}
+#edIn{display:block;width:100%;min-height:52px;border:2px solid var(--accent);border-radius:10px;background:var(--bg);padding:10px 12px;font-size:18px;line-height:1.35;resize:none}
+#edIn:focus{outline:none}
+.fit{margin:8px 0 10px;font-size:15px;font-weight:700}
+.fit.ok{color:var(--ok)} .fit.sm{color:var(--warn)} .fit.bad{color:var(--danger)}
+.fontinfo{font-size:13px;color:var(--muted);margin:-4px 0 10px}
+.erow{display:flex;flex-wrap:wrap;margin:0 -8px -8px 0}
+.erow .btn{margin:0 8px 8px 0;flex:1 1 auto}
+.erow .btn.primary{flex:2 1 160px}
+body.sheet-open{padding-bottom:55vh}
+
+.toast{position:fixed;left:16px;right:16px;bottom:20px;z-index:60;margin:0 auto;max-width:520px;background:var(--ink);color:var(--bg);padding:12px 18px;border-radius:10px;box-shadow:0 6px 20px rgba(0,0,0,.3);text-align:center}
+.loading{display:flex;align-items:center;justify-content:center;padding:30px;color:var(--desk-ink);font-size:16px}
+@media (prefers-reduced-motion:reduce){*{transition:none!important;scroll-behavior:auto!important}}
+
+.app-android .so-web{display:none!important}
+html:not(.app-android) .so-app{display:none!important}
+</style>
+<script src="../papelaria.js"></script>
+<script src="pdf.min.js"></script>
+<script src="pdf-lib.min.js"></script>
+<script src="fontkit.min.js"></script>
+</head>
+<body>
+<div class="screen">
+  <header class="top">
+    <h1>Editar PDF</h1>
+    <p>Abra o PDF do cliente, toque no texto que quer trocar e escreva o novo. O texto novo entra no mesmo lugar, com a mesma letra, tamanho e cor.</p>
+  </header>
+
+  <section id="pick">
+    <div class="step"><span class="num">1</span><h2>Escolha o PDF</h2></div>
+    <label class="drop" id="drop">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/><path d="M9 15h6"/><path d="M12 12v6"/></svg>
+      <strong id="dropT">Toque aqui para escolher o PDF</strong>
+      <span class="so-web">Veio pelo WhatsApp? É mais fácil mandar de lá: veja como logo abaixo.</span><span class="so-app">Veio pelo WhatsApp? Nem precisa procurar: veja abaixo.</span>
+      <input type="file" id="file" accept="application/pdf,.pdf" aria-label="Escolher PDF">
+    </label>
+    <p class="err" id="pickErr" hidden></p>
+    <div class="tips so-app" style="margin-top:12px"><b>PDF que chegou pelo WhatsApp:</b> na conversa, toque no PDF. Se o celular perguntar com qual aplicativo abrir, escolha <b>Editar PDF</b>. Ele abre direto aqui.</div>
+    <details class="tips so-web" style="margin-top:12px" open>
+      <summary>PDF que chegou pelo WhatsApp</summary>
+      <p style="margin:4px 0 6px"><b>Jeito mais fácil:</b></p>
+      <ol>
+        <li>No WhatsApp, abra a conversa e <b>segure o dedo</b> em cima do PDF.</li>
+        <li>Toque no ícone de <b>compartilhar</b> (os três pontinhos ligados, no alto da tela).</li>
+        <li>Escolha <b>Editar PDF</b> na lista. O documento abre direto aqui.</li>
+      </ol>
+      <p style="margin:10px 0 6px"><b>Se Editar PDF não aparecer na lista</b>, procure o arquivo pelo quadro acima:</p>
+      <ol>
+        <li>Toque no quadro. Na tela que abrir, toque em <b>☰</b> (canto de cima, à esquerda).</li>
+        <li>Se só aparecer "Recentes" e "Downloads", toque em <b>⋮</b> (canto de cima, à direita) e em <b>Mostrar armazenamento interno</b>. Depois toque em ☰ de novo.</li>
+        <li>Escolha o armazenamento do celular (aparece com o nome do aparelho, como <b>Galaxy J7 Prime</b>).</li>
+        <li>Abra as pastas <b>WhatsApp → Media → WhatsApp Documents</b>. Os PDFs mais novos ficam no fim ou no começo da lista.</li>
+      </ol>
+    </details>
+    <p class="note"><button class="linkbtn" type="button" id="sampleBtn">Só quero testar: abrir um currículo de exemplo</button></p>
+  </section>
+
+  <section id="workArea" hidden>
+    <div class="filebar"><div class="fn" id="fname"></div><button class="btn" type="button" id="otherBtn">Abrir outro PDF</button></div>
+    <div class="work">
+      <div>
+        <div class="step"><span class="num">2</span><h2>Toque no texto que quer mudar</h2></div>
+        <p class="hint">Os trechos marcados em amarelo podem ser trocados. Os que já foram mudados ficam em verde.</p>
+        <div class="zoomrow"><button class="btn" type="button" id="zoomBtn">Aumentar a folha</button></div>
+        <div class="desk"><div id="pages"></div></div>
+      </div>
+      <div class="side">
+        <p class="hint" style="margin-top:18px"><b>Ou escolha na lista</b> (mais fácil no celular):</p>
+        <div class="list">
+          <div class="lh"><input type="search" id="q" placeholder="Procurar um texto (ex.: telefone)" aria-label="Procurar texto"></div>
+          <div class="items" id="items"></div>
+        </div>
+        <div class="printbox">
+          <div class="step"><span class="num">3</span><h2>Imprimir</h2></div>
+          <p class="changes" id="changes">Nenhuma mudança ainda.</p>
+          <a class="btn primary big off" id="printBtn" role="button" href="#">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9V3h12v6"/><rect x="3" y="9" width="18" height="8" rx="2"/><path d="M6 14h12v7H6z"/></svg>
+            Imprimir
+          </a>
+          <p class="pdfstatus" id="pdfStatus" hidden role="status"></p>
+          <button class="btn big so-app" type="button" id="appShareBtn">Enviar ao cliente (WhatsApp)</button>
+          <details class="tips">
+            <summary>Como imprimir ou devolver ao cliente</summary>
+            <ol>
+              <li>Toque em <b>Imprimir</b>. O PDF alterado é baixado.</li>
+              <li>Na notificação de download, toque em <b>Abrir</b> e escolha <b>Epson iPrint</b>.</li>
+              <li>Para mandar ao cliente: no WhatsApp, anexe <b>Documento</b> e escolha o arquivo que termina em <b>-editado</b>.</li>
+              <li>Depois, apague os PDFs em <b>Meus Arquivos → Downloads</b> para liberar espaço.</li>
+            </ol>
+          </details>
+        </div>
+      </div>
+    </div>
+  </section>
+</div>
+
+<div class="sheet" id="sheet" hidden role="dialog" aria-labelledby="edTitle">
+  <h2 id="edTitle">Trocar texto</h2>
+  <div class="orig">Original: <b id="edOrig"></b></div>
+  <textarea id="edIn" rows="2" aria-label="Texto novo"></textarea>
+  <div class="fit" id="edFit"></div>
+  <div class="fontinfo" id="edFont"></div>
+  <div class="erow">
+    <button class="btn primary" type="button" id="edSave">Salvar</button>
+    <button class="btn" type="button" id="edCancel">Cancelar</button>
+  </div>
+  <div class="erow" style="margin-top:8px">
+    <button class="btn danger" type="button" id="edDel">Apagar este texto</button>
+    <button class="btn" type="button" id="edUndo">Voltar ao original</button>
+  </div>
+</div>
+
+<div class="toast" id="toast" hidden role="status"></div>
+
+<script>
+(function(){
+"use strict";
+function $(s){return document.querySelector(s);}
+function el(tag,attrs){var e=document.createElement(tag);if(attrs)for(var k in attrs){if(k==='class')e.className=attrs[k];else e.setAttribute(k,attrs[k]);}
+  for(var i=2;i<arguments.length;i++){var c=arguments[i];if(c!=null)e.appendChild(typeof c==='string'?document.createTextNode(c):c);}return e;}
+var toastT=0;
+function toast(m){var t=$('#toast');t.textContent=m;t.hidden=false;clearTimeout(toastT);toastT=setTimeout(function(){t.hidden=true;},4500);}
+function pdfMsg(t){var p=$('#pdfStatus');p.textContent=t;p.hidden=!t;}
+
+var LIBS_OK=!!(window.pdfjsLib&&window.PDFLib&&window.fontkit);
+if(LIBS_OK) pdfjsLib.GlobalWorkerOptions.workerSrc='pdf.worker.min.js';
+var rgb=LIBS_OK?PDFLib.rgb:null;
+
+/* ---------- Fontes parecidas com as originais (mesmas medidas) ---------- */
+var FAMILY_LABEL={carlito:'Calibri',caladea:'Cambria',sans:'Arial',serif:'Times New Roman'};
+var fontBytes={},fontBytesP={},measureDoc=null,measureFonts={};
+function styleKey(b,i){return b&&i?'bi':b?'b':i?'i':'r';}
+function loadFontBytes(key){
+  if(fontBytes[key])return Promise.resolve(fontBytes[key]);
+  if(!fontBytesP[key])fontBytesP[key]=fetch('font-'+key+'.ttf').then(function(r){if(!r.ok)throw new Error('fonte');return r.arrayBuffer();}).then(function(b){fontBytes[key]=new Uint8Array(b);return fontBytes[key];});
+  return fontBytesP[key];
+}
+function measureFont(key){
+  if(measureFonts[key])return Promise.resolve(measureFonts[key]);
+  return loadFontBytes(key).then(function(bytes){
+    var p=measureDoc?Promise.resolve(measureDoc):PDFLib.PDFDocument.create().then(function(d){d.registerFontkit(fontkit);measureDoc=d;return d;});
+    return p.then(function(d){return d.embedFont(bytes,{subset:true});}).then(function(f){measureFonts[key]=f;return f;});
+  });
+}
+function familyFor(name,info){
+  var n=(name||'').replace(/^[A-Z]{6}\+/,'').toLowerCase().replace(/[^a-z]/g,'');
+  if(/calibri|carlito/.test(n))return 'carlito';
+  if(/cambria|caladea/.test(n))return 'caladea';
+  if(/arial|helvetica|liberationsans|arimo|verdana|tahoma|segoe|roboto|opensans|lato|montserrat|sans|gothic|futura|trebuchet|centurygothic|candara|corbel|aptos|poppins|raleway|nunito|ubuntu|dejavusans/.test(n))return 'sans';
+  if(/times|liberationserif|tinos|georgia|garamond|bookantiqua|palatino|serif|minion|constantia|cambo|baskerville|bookman|century|cmr|lmroman/.test(n))return 'serif';
+  if(info&&(info.isSerifFont||info.fallbackName==='serif'))return 'serif';
+  return 'sans';
+}
+function sanitize(text,font){
+  var out='',s=String(text).replace(/[\r\n\t]+/g,' ');
+  var cs=font?font.getCharacterSet():null,set=null;
+  if(cs){set={};for(var i=0;i<cs.length;i++)set[cs[i]]=1;}
+  for(var j=0;j<s.length;j++){var cp=s.codePointAt(j);if(cp>0xffff)j++;
+    var ch=String.fromCodePoint(cp);
+    if(ch==='’'||ch==='‘'){if(!set||set[cp]){out+=ch;continue;}ch="'";cp=39;}
+    if(!set||set[cp])out+=ch;}
+  return out.replace(/ {2,}/g,' ');
+}
+
+/* ---------- Estado ---------- */
+var origBytes=null,origName='',pieces=[],pagesInfo=[],edits={},curBytes=null,zoom=false,selId=-1;
+var buildSeq=0,building=false,readyUrl='',readyKey='',readyName='';
+
+/* ---------- Abrir o PDF ---------- */
+$('#file').addEventListener('change',function(e){var f=e.target.files&&e.target.files[0];e.target.value='';if(f)openFile(f);});
+function pickError(t){var p=$('#pickErr');p.textContent=t;p.hidden=!t;}
+function setBusy(b,t){$('#drop').classList.toggle('busy',b);$('#dropT').textContent=b?(t||'Abrindo o PDF…'):'Toque aqui para escolher o PDF';}
+function openFile(f){
+  pickError('');
+  if(!LIBS_OK){pickError('O aplicativo não carregou direito. Feche e abra de novo com internet.');return;}
+  if(!/\.pdf$/i.test(f.name)&&f.type!=='application/pdf'){pickError('Esse arquivo não é PDF. Se for documento do Word, abra no Word e salve como PDF, ou peça o PDF ao cliente.');return;}
+  setBusy(true);
+  var r=new FileReader();
+  r.onload=function(){openBytes(new Uint8Array(r.result),f.name);};
+  r.onerror=function(){setBusy(false);pickError('Não consegui ler o arquivo. Tente de novo.');};
+  r.readAsArrayBuffer(f);
+}
+function openBytes(bytes,name){
+  setBusy(true);
+  origBytes=bytes;origName=name;edits={};pieces=[];pagesInfo=[];curBytes=bytes;selId=-1;
+  analyze(bytes.slice()).then(function(n){
+    setBusy(false);
+    if(!n){pickError('Este PDF não tem texto para trocar. Ele é uma foto ou um documento escaneado. Nesse caso é preciso digitar o currículo de novo (o aplicativo Transformar Texto ajuda).');return;}
+    $('#pick').hidden=true;$('#workArea').hidden=false;
+    $('#fname').innerHTML='';
+    $('#fname').appendChild(document.createTextNode(name));
+    $('#fname').appendChild(el('small',null,pagesInfo.length+(pagesInfo.length>1?' folhas':' folha')+' · '+n+' textos que podem ser trocados'));
+    renderList();updateChanges();prepDownload();
+    window.scrollTo(0,0);
+  }).catch(function(err){
+    setBusy(false);
+    var m=String(err&&err.message||err);
+    if(/password/i.test(m))pickError('Este PDF tem senha. Peça ao cliente a versão sem senha.');
+    else pickError('Não consegui abrir este PDF. Ele pode estar danificado. ('+m+')');
+  });
+}
+$('#otherBtn').addEventListener('click',function(){
+  closeEditor();$('#workArea').hidden=true;$('#pick').hidden=false;$('#pages').innerHTML='';pdfMsg('');
+  if(readyUrl){URL.revokeObjectURL(readyUrl);readyUrl='';}
+  $('#printBtn').classList.add('off');window.scrollTo(0,0);
+});
+
+/* ---------- Ler os textos do PDF e descobrir letra, tamanho e cor de cada trecho ---------- */
+function analyze(bytes){
+  return pdfjsLib.getDocument({data:bytes,fontExtraProperties:true,isEvalSupported:false}).promise.then(function(doc){
+    var seq=Promise.resolve(),total=0;
+    for(var p=1;p<=doc.numPages;p++)(function(pn){
+      seq=seq.then(function(){return doc.getPage(pn).then(function(page){
+        var vp1=page.getViewport({scale:1});
+        var scale=Math.min(2.2,2400/Math.max(vp1.width,vp1.height));
+        var vp=page.getViewport({scale:scale});
+        var cv=document.createElement('canvas');cv.width=Math.ceil(vp.width);cv.height=Math.ceil(vp.height);
+        var ctx=cv.getContext('2d',{willReadFrequently:true});
+        return page.render({canvasContext:ctx,viewport:vp}).promise.then(function(){return page.getTextContent();}).then(function(tc){
+          var ps=buildPieces(tc,page,pn-1);
+          ps.forEach(function(pc){sampleColors(pc,ctx,vp,cv);});
+          pagesInfo.push({w:vp1.width,h:vp1.height,vb:page.view});
+          markLayout(ps,pn-1);
+          ps.forEach(function(pc){pc.id=pieces.length;pieces.push(pc);});
+          total+=ps.length;
+          cv.width=cv.height=0;page.cleanup();
+        });
+      });});
+    })(p);
+    return seq.then(function(){doc.destroy();return renderPreview(curBytes).then(function(){return total;});});
+  });
+}
+function buildPieces(tc,page,pi){
+  var items=[];
+  tc.items.forEach(function(it){
+    if(typeof it.str!=='string')return;
+    var t=it.transform;
+    if(Math.abs(t[1])>0.01||Math.abs(t[2])>0.01||t[0]<=0||t[3]<=0)return; // só texto na horizontal
+    items.push({s:it.str,x:t[4],y:t[5],w:it.width,size:Math.abs(t[3]),hs:t[0]/t[3],font:it.fontName,eol:it.hasEOL});
+  });
+  items.sort(function(a,b){return Math.abs(a.y-b.y)>Math.min(a.size,b.size)*0.3?b.y-a.y:a.x-b.x;});
+  var lines=[];
+  items.forEach(function(it){
+    var L=lines.length?lines[lines.length-1]:null;
+    if(L&&Math.abs(L.y-it.y)<=Math.min(L.size,it.size)*0.3){L.items.push(it);}
+    else lines.push({y:it.y,size:it.size,items:[it]});
+  });
+  var out=[];
+  lines.forEach(function(L){
+    L.items.sort(function(a,b){return a.x-b.x;});
+    var cur=null;
+    L.items.forEach(function(it){
+      var blank=!it.s.trim();
+      if(cur){
+        var gap=it.x-cur.x1;
+        var same=it.font===cur.font&&Math.abs(it.size-cur.size)<0.4;
+        if(blank&&gap<cur.size*1.2){cur.x1=Math.max(cur.x1,it.x+it.w);if(!/ $/.test(cur.s))cur.s+=' ';return;}
+        if(same&&gap<cur.size*0.9&&gap>-cur.size*0.5){
+          if(gap>cur.size*0.12&&!/ $/.test(cur.s)&&!/^ /.test(it.s))cur.s+=' ';
+          cur.s+=it.s;cur.x1=Math.max(cur.x1,it.x+it.w);return;
+        }
+        push(cur);cur=null;
+      }
+      if(blank)return;
+      cur={s:it.s,x0:it.x,x1:it.x+it.w,y:it.y,size:it.size,hs:it.hs,font:it.font,page:pi};
+    });
+    if(cur)push(cur);
+  });
+  function push(c){
+    c.s=c.s.replace(/\s+/g,' ').trim();
+    if(!c.s)return;
+    var info=null;try{info=page.commonObjs.get(c.font);}catch(e){}
+    var nm=info&&info.name||'';
+    c.fam=familyFor(nm,info);
+    c.bold=/bold|black|heavy|semibold|demibold|extrabold/i.test(nm)||!!(info&&(info.bold||info.black));
+    c.italic=/italic|oblique/i.test(nm)||!!(info&&info.italic);
+    c.fkey=c.fam+'-'+styleKey(c.bold,c.italic);
+    var asc=info&&info.ascent>0.5&&info.ascent<1.3?info.ascent:0.9,dsc=info&&info.descent<0&&info.descent>-0.6?info.descent:-0.22;
+    c.asc=asc;c.dsc=dsc;c.fontName=nm.replace(/^[A-Z]{6}\+/,'');
+    out.push(c);
+  }
+  return out;
+}
+// cor do fundo, cor da letra e a área exata ocupada pela tinta
+function sampleColors(pc,ctx,vp,cv){
+  var top=pc.y+pc.size*1.05,bot=pc.y-pc.size*0.32;
+  var r=vp.convertToViewportRectangle([pc.x0-pc.size*0.15,bot,pc.x1+pc.size*0.15,top]);
+  var x0=Math.max(0,Math.floor(Math.min(r[0],r[2]))),x1=Math.min(cv.width,Math.ceil(Math.max(r[0],r[2])));
+  var y0=Math.max(0,Math.floor(Math.min(r[1],r[3]))),y1=Math.min(cv.height,Math.ceil(Math.max(r[1],r[3])));
+  var w=x1-x0,h=y1-y0;
+  pc.bg=[1,1,1];pc.fg=[0,0,0];pc.box=null;
+  if(w<2||h<2)return;
+  var d=ctx.getImageData(x0,y0,w,h).data;
+  // fundo: cor mais comum na borda da área
+  var counts={},best=null,bc=0,x,y,i,k;
+  function add(i){var q=(d[i]>>3)+'_'+(d[i+1]>>3)+'_'+(d[i+2]>>3);var c=(counts[q]||0)+1;counts[q]=c;if(c>bc){bc=c;best=i;}}
+  for(x=0;x<w;x++){add(x*4);add(((h-1)*w+x)*4);}
+  for(y=0;y<h;y++){add(y*w*4);add((y*w+w-1)*4);}
+  var bgc=[d[best],d[best+1],d[best+2]];
+  pc.bg=[bgc[0]/255,bgc[1]/255,bgc[2]/255];
+  // letra: pixels mais diferentes do fundo
+  var maxd=0,dist=new Float32Array(w*h);
+  for(i=0,k=0;i<d.length;i+=4,k++){var dd=Math.abs(d[i]-bgc[0])+Math.abs(d[i+1]-bgc[1])+Math.abs(d[i+2]-bgc[2]);dist[k]=dd;if(dd>maxd)maxd=dd;}
+  if(maxd<60){pc.fg=bgc[0]+bgc[1]+bgc[2]>380?[0,0,0]:[1,1,1];return;}
+  var sr=0,sg=0,sb=0,n=0,th=maxd*0.75;
+  for(i=0,k=0;i<d.length;i+=4,k++)if(dist[k]>=th){sr+=d[i];sg+=d[i+1];sb+=d[i+2];n++;}
+  pc.fg=[sr/n/255,sg/n/255,sb/n/255];
+  // linhas com tinta, a partir do meio da letra, para apagar só este texto
+  var rowInk=new Uint8Array(h),inkTh=maxd*0.35;
+  for(y=0;y<h;y++){for(x=0;x<w;x++){if(dist[y*w+x]>inkTh){rowInk[y]=1;break;}}}
+  var core=vp.convertToViewportPoint(pc.x0,pc.y+pc.size*0.3)[1]-y0;
+  var ca=Math.max(0,Math.min(h-1,Math.round(core)));
+  var a=ca,b=ca;
+  if(!rowInk[ca]){var found=-1;for(k=1;k<h&&found<0;k++){if(ca-k>=0&&rowInk[ca-k])found=ca-k;else if(ca+k<h&&rowInk[ca+k])found=ca+k;}if(found<0)return;a=b=found;}
+  while(a>0&&rowInk[a-1])a--;
+  while(b<h-1&&rowInk[b+1])b++;
+  var s=vp.scale;
+  pc.box={top:vp.convertToPdfPoint(0,y0+a-2.5)[1],bot:vp.convertToPdfPoint(0,y0+b+3)[1]};
+  if(pc.box.top<pc.box.bot){var t=pc.box.top;pc.box.top=pc.box.bot;pc.box.bot=t;}
+  pc.box.top=Math.min(pc.box.top,pc.y+pc.size*1.0);
+  pc.box.bot=Math.max(pc.box.bot,pc.y-pc.size*0.3);
+}
+// alinhamento e espaço disponível de cada trecho
+function markLayout(ps,pi){
+  if(!ps.length)return;
+  var L=Infinity,R=-Infinity;ps.forEach(function(p){L=Math.min(L,p.x0);R=Math.max(R,p.x1);});
+  var mid=(L+R)/2;
+  ps.forEach(function(p){
+    var c=(p.x0+p.x1)/2,w=p.x1-p.x0;
+    p.anchor='l';
+    if(Math.abs(p.x1-R)<2&&p.x0>mid&&w<(R-L)*0.45)p.anchor='r';
+    else if(Math.abs(c-mid)<3&&p.x0>L+p.size*2)p.anchor='c';
+    var right=R,left=L;
+    ps.forEach(function(q){
+      if(q===p)return;
+      var vOver=Math.min(p.y+p.size*0.8,q.y+q.size*0.8)-Math.max(p.y-p.size*0.2,q.y-q.size*0.2);
+      if(vOver<=0)return;
+      if(q.x0>=p.x1-0.5)right=Math.min(right,q.x0-p.size*0.4);
+      if(q.x1<=p.x0+0.5)left=Math.max(left,q.x1+p.size*0.4);
+    });
+    if(right<p.x1)right=p.x1;
+    if(left>p.x0)left=p.x0;
+    p.left=left;p.right=right;
+  });
+}
+
+/* ---------- Medir o texto novo e decidir o tamanho ---------- */
+function plan(pc,text,font){
+  var size=pc.size,w=font.widthOfTextAtSize(text,size)*(pc.hs||1);
+  var avail=pc.anchor==='r'?pc.x1-pc.left:pc.anchor==='c'?2*Math.min((pc.x0+pc.x1)/2-pc.left,pc.right-(pc.x0+pc.x1)/2):pc.right-pc.x0;
+  var status='ok';
+  if(w>avail+0.3){
+    var k=avail/w;
+    if(k>=0.85){size*=k;w*=k;status='sm';}
+    else{size*=0.85;w*=0.85;status='bad';}
+  }
+  var x=pc.anchor==='r'?pc.x1-w:pc.anchor==='c'?(pc.x0+pc.x1)/2-w/2:pc.x0;
+  return {size:size,x:x,w:w,status:status};
+}
+
+/* ---------- Montar o PDF novo ---------- */
+function build(){
+  var seq=++buildSeq;
+  var keys=Object.keys(edits);
+  if(!keys.length){curBytes=origBytes;return renderPreview(curBytes).then(function(){prepDownload();});}
+  building=true;$('#printBtn').classList.add('off');pdfMsg('Aplicando as mudanças…');
+  var need={};keys.forEach(function(k){var e=edits[k];if(e.text)need[pieces[k].fkey]=1;});
+  return Promise.all(Object.keys(need).map(loadFontBytes)).then(function(){
+    return PDFLib.PDFDocument.load(origBytes,{ignoreEncryption:true,updateMetadata:false});
+  }).then(function(doc){
+    doc.registerFontkit(fontkit);
+    var emb={},p=Promise.resolve();
+    Object.keys(need).forEach(function(fk){p=p.then(function(){return doc.embedFont(fontBytes[fk],{subset:true}).then(function(f){emb[fk]=f;});});});
+    return p.then(function(){
+      var pages=doc.getPages();
+      keys.forEach(function(k){
+        var pc=pieces[k],e=edits[k],page=pages[pc.page];
+        var top=pc.box?pc.box.top:pc.y+pc.size*pc.asc*0.95,bot=pc.box?pc.box.bot:pc.y+pc.size*pc.dsc;
+        page.drawRectangle({x:pc.x0-0.8,y:bot,width:pc.x1-pc.x0+1.6,height:top-bot,color:rgb(pc.bg[0],pc.bg[1],pc.bg[2]),borderWidth:0});
+        if(e.text){
+          var f=emb[pc.fkey],t=sanitize(e.text,f),pl=plan(pc,t,f);
+          page.drawText(t,{x:pl.x,y:pc.y,size:pl.size,font:f,color:rgb(pc.fg[0],pc.fg[1],pc.fg[2])});
+        }
+      });
+      return doc.save();
+    });
+  }).then(function(bytes){
+    if(seq!==buildSeq)return;
+    curBytes=bytes;building=false;
+    return renderPreview(bytes).then(function(){prepDownload();});
+  }).catch(function(err){
+    building=false;
+    pdfMsg('Não consegui aplicar as mudanças neste PDF ('+String(err&&err.message||err)+'). Desfaça a última mudança e tente de novo.');
+  });
+}
+
+/* ---------- Mostrar as folhas ---------- */
+function renderPreview(bytes){
+  var box=$('#pages');
+  var avail=Math.max(240,(box.clientWidth||document.documentElement.clientWidth-52));
+  return pdfjsLib.getDocument({data:bytes.slice(),isEvalSupported:false}).promise.then(function(doc){
+    var frag=document.createDocumentFragment(),seq=Promise.resolve();
+    for(var p=1;p<=doc.numPages;p++)(function(pn){
+      seq=seq.then(function(){return doc.getPage(pn).then(function(page){
+        var vp1=page.getViewport({scale:1});
+        var cssW=zoom?Math.max(avail,Math.min(1100,avail*2)):Math.min(avail,620);
+        var dpr=Math.min(2,window.devicePixelRatio||1);
+        var vp=page.getViewport({scale:cssW/vp1.width*dpr});
+        var cv=document.createElement('canvas');cv.width=Math.ceil(vp.width);cv.height=Math.ceil(vp.height);
+        var wrap=el('div',{'class':'pg'},cv);
+        wrap.style.width=cssW+'px';wrap.style.height=(cssW*vp1.height/vp1.width)+'px';
+        if(doc.numPages>1)wrap.appendChild(el('div',{'class':'lbl'},'Folha '+pn+' de '+doc.numPages));
+        var vpH=page.getViewport({scale:1});
+        pieces.forEach(function(pc){
+          if(pc.page!==pn-1)return;
+          var e=edits[pc.id],top=pc.y+pc.size*0.95,bot=pc.y-pc.size*0.25,x1=pc.x1;
+          if(e&&e.text&&e.w)x1=Math.max(pc.x1,pc.x0+e.w);
+          var r=vpH.convertToViewportRectangle([pc.x0-1,bot,x1+1,top]);
+          var L=Math.min(r[0],r[2])/vpH.width*100,T=Math.min(r[1],r[3])/vpH.height*100;
+          var W=Math.abs(r[2]-r[0])/vpH.width*100,H=Math.abs(r[3]-r[1])/vpH.height*100;
+          var b=el('button',{type:'button','class':'hit'+(e?' ed':'')+(pc.id===selId?' sel':''),'aria-label':'Trocar: '+pc.s});
+          b.style.left=L+'%';b.style.top=T+'%';b.style.width=W+'%';b.style.height=H+'%';
+          b.addEventListener('click',function(){openEditor(pc.id);});
+          pc.hitEl=b;wrap.appendChild(b);
+        });
+        frag.appendChild(wrap);
+        return page.render({canvasContext:cv.getContext('2d'),viewport:vp}).promise;
+      });});
+    })(p);
+    return seq.then(function(){box.innerHTML='';box.appendChild(frag);doc.destroy();});
+  });
+}
+$('#zoomBtn').addEventListener('click',function(){
+  zoom=!zoom;$('#zoomBtn').textContent=zoom?'Diminuir a folha':'Aumentar a folha';
+  var d=$('.desk');d.style.overflowX=zoom?'auto':'';
+  renderPreview(curBytes);
+});
+
+/* ---------- Lista de textos ---------- */
+function renderList(){
+  var q=($('#q').value||'').trim().toLowerCase(),box=$('#items');box.innerHTML='';
+  var n=0;
+  pieces.forEach(function(pc){
+    var e=edits[pc.id],shown=e?(e.text||''):pc.s;
+    if(q&&(pc.s+' '+shown).toLowerCase().indexOf(q)<0)return;
+    n++;
+    var t=el('span',{'class':'t'+(pc.bold?' b':'')});
+    if(e){t.appendChild(el('span',{'class':'tag'+(e.text?'':' del')},e.text?'alterado':'apagado'));t.appendChild(document.createTextNode(e.text||''));if(e.text)t.title=e.text;}
+    else t.appendChild(document.createTextNode(pc.s));
+    var m=el('span',{'class':'m'});
+    if(e)m.appendChild(el('span',{'class':'old'},pc.s));
+    else m.appendChild(document.createTextNode((pagesInfo.length>1?'Folha '+(pc.page+1)+' · ':'')+FAMILY_LABEL[pc.fam]+' '+(Math.round(pc.size*2)/2)+(pc.bold?' · negrito':'')));
+    var b=el('button',{type:'button','class':'it'},t,m);
+    b.addEventListener('click',function(){openEditor(pc.id,true);});
+    box.appendChild(b);
+  });
+  if(!n)box.appendChild(el('div',{'class':'empty'},q?'Nenhum texto encontrado com essa palavra.':'Nenhum texto.'));
+}
+$('#q').addEventListener('input',renderList);
+
+/* ---------- Editor ---------- */
+var edIn=$('#edIn'),edFont=null,edPiece=null;
+function openEditor(id,fromList){
+  var pc=pieces[id];edPiece=pc;selId=id;
+  pieces.forEach(function(p){if(p.hitEl)p.hitEl.classList.toggle('sel',p.id===id);});
+  if(fromList&&pc.hitEl)pc.hitEl.scrollIntoView({behavior:'smooth',block:'center'});
+  $('#edOrig').textContent=pc.s;
+  var e=edits[id];
+  edIn.value=e?e.text:pc.s;
+  $('#edUndo').hidden=!e;
+  $('#edFont').textContent='Letra: '+FAMILY_LABEL[pc.fam]+(pc.bold?' negrito':'')+(pc.italic?' itálico':'')+', tamanho '+(Math.round(pc.size*2)/2)+(pc.fontName&&FAMILY_LABEL[pc.fam].toLowerCase().replace(/ /g,'')!==pc.fontName.toLowerCase().replace(/[^a-z]/g,'').replace(/(bold|italic|regular|mt|ps)+$/,'')?' (parecida com '+pc.fontName.replace(/[-,].*$/,'')+')':'');
+  $('#edFit').textContent='';$('#edFit').className='fit';
+  $('#sheet').hidden=false;document.body.classList.add('sheet-open');
+  edFont=null;
+  measureFont(pc.fkey).then(function(f){if(edPiece===pc){edFont=f;checkFit();}}).catch(function(){});
+  setTimeout(function(){edIn.focus();var l=edIn.value.length;try{edIn.setSelectionRange(l,l);}catch(e){}autoGrow();},60);
+}
+function closeEditor(){$('#sheet').hidden=true;document.body.classList.remove('sheet-open');edPiece=null;selId=-1;pieces.forEach(function(p){if(p.hitEl)p.hitEl.classList.remove('sel');});}
+function autoGrow(){edIn.style.height='auto';edIn.style.height=Math.min(180,edIn.scrollHeight+4)+'px';}
+function checkFit(){
+  autoGrow();
+  var f=$('#edFit');
+  if(!edFont||!edPiece){f.textContent='';return;}
+  var t=sanitize(edIn.value,edFont);
+  if(!t.trim()){f.className='fit sm';f.textContent='Texto vazio: o trecho será apagado.';return;}
+  var pl=plan(edPiece,t,edFont);
+  if(pl.status==='ok'){f.className='fit ok';f.textContent='✓ Cabe no mesmo espaço, com a mesma letra.';}
+  else if(pl.status==='sm'){f.className='fit sm';f.textContent='Ficou um pouco maior: a letra vai diminuir um pouquinho para caber.';}
+  else{f.className='fit bad';f.textContent='Texto comprido demais para este espaço. Ele vai passar do lugar. Tente encurtar.';}
+  if(t!==edIn.value.replace(/[\r\n\t]+/g,' ').replace(/ {2,}/g,' '))f.textContent+=' (Emojis e símbolos especiais serão tirados.)';
+}
+edIn.addEventListener('input',checkFit);
+edIn.addEventListener('keydown',function(e){if(e.key==='Enter'){e.preventDefault();save();}});
+function save(){
+  if(!edPiece)return;
+  var pc=edPiece,t=edIn.value.replace(/[\r\n\t]+/g,' ').replace(/ {2,}/g,' ').trim();
+  if(t===pc.s){delete edits[pc.id];}
+  else{
+    var w=null;if(edFont&&t){var pl=plan(pc,sanitize(t,edFont),edFont);w=pl.x+pl.w-pc.x0;}
+    edits[pc.id]={text:t,w:w};
+  }
+  closeEditor();changed(t?'Texto trocado.':'Texto apagado.');
+}
+$('#edSave').addEventListener('click',save);
+$('#edCancel').addEventListener('click',closeEditor);
+$('#edDel').addEventListener('click',function(){if(!edPiece)return;edits[edPiece.id]={text:'',w:null};closeEditor();changed('Texto apagado.');});
+$('#edUndo').addEventListener('click',function(){if(!edPiece)return;delete edits[edPiece.id];closeEditor();changed('Voltou ao texto original.');});
+function changed(msg){renderList();updateChanges();toast(msg);build();}
+function updateChanges(){
+  var n=Object.keys(edits).length;
+  $('#changes').textContent=n?n+(n>1?' mudanças feitas.':' mudança feita.'):'Nenhuma mudança ainda. Você também pode imprimir o PDF como está.';
+}
+
+/* ---------- Imprimir (arquivo pronto antes do toque, para baixar com um toque só) ---------- */
+var pb=$('#printBtn');
+function prepDownload(){
+  if(!curBytes)return;
+  if(readyUrl)URL.revokeObjectURL(readyUrl);
+  var n=Object.keys(edits).length,base=origName.replace(/\.pdf$/i,'')||'documento';
+  readyName=n?base+'-editado.pdf':base+'.pdf';
+  readyUrl=URL.createObjectURL(new Blob([curBytes],{type:'application/pdf'}));
+  pb.href=readyUrl;pb.setAttribute('download',readyName);pb.classList.remove('off');
+  pdfMsg('');
+}
+pb.addEventListener('click',function(e){
+  if(building||!readyUrl){e.preventDefault();pdfMsg('Aplicando as mudanças… toque de novo em um instante.');return;}
+  if(window.PapelariaApp&&PapelariaApp.ativo){e.preventDefault();PapelariaApp.enviar(new Blob([curBytes],{type:'application/pdf'}),readyName,'imprimir',pdfMsg);return;}
+  pdfMsg('Baixando o PDF. Toque em "Abrir" na notificação de download e escolha o Epson iPrint para imprimir.');
+});
+
+/* ---------- Currículo de exemplo (feito aqui mesmo, com nome e dados inventados) ---------- */
+$('#sampleBtn').addEventListener('click',function(){
+  if(!LIBS_OK){pickError('O aplicativo não carregou direito. Feche e abra de novo com internet.');return;}
+  setBusy(true,'Montando o exemplo…');
+  Promise.all(['sans-r','sans-b'].map(loadFontBytes)).then(function(){return PDFLib.PDFDocument.create();}).then(function(doc){
+    doc.registerFontkit(fontkit);
+    return Promise.all([doc.embedFont(fontBytes['sans-r'],{subset:true}),doc.embedFont(fontBytes['sans-b'],{subset:true})]).then(function(F){
+      var R=F[0],B=F[1],pg=doc.addPage([595.28,841.89]),blue=rgb(0.12,0.31,0.47),grey=rgb(0.35,0.35,0.35),k=rgb(0.1,0.1,0.1);
+      pg.drawRectangle({x:0,y:760,width:595.28,height:81.89,color:blue});
+      pg.drawText('EXEMPLO DA SILVA',{x:50,y:800,size:24,font:B,color:rgb(1,1,1)});
+      pg.drawText('Auxiliar Administrativo',{x:50,y:776,size:13,font:R,color:rgb(0.85,0.9,0.95)});
+      var y=730;
+      [['Telefone: ','(47) 99999-0000'],['E-mail: ','exemplo.silva@email.com'],['Endereço: ','Rua das Flores, 100 – Centro, Joinville/SC']].forEach(function(l){
+        pg.drawText(l[0],{x:50,y:y,size:11,font:B,color:k});pg.drawText(l[1],{x:50+B.widthOfTextAtSize(l[0],11),y:y,size:11,font:R,color:k});y-=17;});
+      function head(t){y-=14;pg.drawText(t,{x:50,y:y,size:12,font:B,color:blue});pg.drawLine({start:{x:50,y:y-5},end:{x:545,y:y-5},thickness:1,color:blue});y-=22;}
+      head('OBJETIVO');
+      pg.drawText('Atuar na área administrativa com organização e bom atendimento.',{x:50,y:y,size:11,font:R,color:k});y-=8;
+      head('EXPERIÊNCIA');
+      [['Papelaria Central','2021 – atual','Atendimento, caixa e controle de estoque.'],['Mercado Bom Preço','2019 – 2021','Operador de caixa e reposição.']].forEach(function(j){
+        pg.drawText(j[0],{x:50,y:y,size:11,font:B,color:k});pg.drawText(j[1],{x:545-R.widthOfTextAtSize(j[1],10),y:y,size:10,font:R,color:grey});y-=15;
+        pg.drawText(j[2],{x:50,y:y,size:11,font:R,color:k});y-=20;});
+      head('FORMAÇÃO');
+      pg.drawText('Ensino Médio completo – 2018',{x:50,y:y,size:11,font:R,color:k});
+      return doc.save();
+    });
+  }).then(function(bytes){openBytes(bytes,'curriculo-exemplo.pdf');}).catch(function(err){setBusy(false);pickError('Não consegui montar o exemplo ('+String(err&&err.message||err)+').');});
+});
+
+$('#appShareBtn').addEventListener('click',function(){
+  if(building||!readyUrl){pdfMsg('Aplicando as mudanças… toque de novo em um instante.');return;}
+  PapelariaApp.enviar(new Blob([curBytes],{type:'application/pdf'}),readyName,'compartilhar',pdfMsg);
+});
+// PDF que chegou pelo WhatsApp ("Abrir com" ou Compartilhar)
+window.papelariaReceber=function(){
+  var fs=PapelariaApp.pegarArquivos();if(!fs.length)return;
+  var f=fs[0];
+  closeEditor();$('#workArea').hidden=true;$('#pick').hidden=false;$('#pages').innerHTML='';pdfMsg('');
+  setBusy(true,'Abrindo o PDF recebido…');
+  var r=new FileReader();
+  r.onload=function(){openBytes(new Uint8Array(r.result),f.name||'documento.pdf');};
+  r.onerror=function(){setBusy(false);pickError('Não consegui abrir o PDF recebido.');};
+  r.readAsArrayBuffer(f);
+};
+if(!LIBS_OK)pickError('O aplicativo não carregou direito. Feche e abra de novo com internet.');
+// PDF que chegou pelo Compartilhar do WhatsApp
+if(/[?&]recebido=1/.test(location.search)&&window.caches){
+  try{history.replaceState(null,'',location.pathname);}catch(e){}
+  setBusy(true,'Abrindo o PDF recebido…');
+  caches.open('editar-pdf-recebido').then(function(c){
+    return c.match('./recebido.pdf').then(function(r){
+      if(!r){setBusy(false);pickError('O PDF compartilhado não chegou. Tente compartilhar de novo ou escolha pelo quadro acima.');return;}
+      var nm='documento.pdf';try{nm=decodeURIComponent(r.headers.get('X-Nome')||nm);}catch(e){}
+      return r.arrayBuffer().then(function(b){c.delete('./recebido.pdf');if(LIBS_OK)openBytes(new Uint8Array(b),nm);else setBusy(false);});
+    });
+  }).catch(function(){setBusy(false);pickError('Não consegui abrir o PDF compartilhado. Escolha pelo quadro acima.');});
+}
+if(!(window.PapelariaApp&&PapelariaApp.ativo)&&'serviceWorker' in navigator&&(location.protocol==='https:'||location.hostname==='localhost')){navigator.serviceWorker.register('sw.js').catch(function(){});}
+})();
+</script>
+</body>
+</html>

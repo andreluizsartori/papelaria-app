@@ -1,0 +1,44 @@
+plugins {
+    id 'com.android.application'
+}
+
+def numero = (System.getenv('GITHUB_RUN_NUMBER') ?: '1').toInteger()
+
+android {
+    namespace 'br.com.papelaria.apps'
+    compileSdk 34
+
+    defaultConfig {
+        applicationId 'br.com.papelaria.apps'
+        minSdk 21
+        targetSdk 34
+        versionCode numero
+        versionName "1.${numero}"
+    }
+
+    signingConfigs {
+        assinatura {
+            storeFile file('papelaria.keystore')
+            storePassword 'papelaria-joinville'
+            keyAlias 'papelaria'
+            keyPassword 'papelaria-joinville'
+        }
+    }
+
+    buildTypes {
+        release {
+            minifyEnabled false
+            signingConfig signingConfigs.assinatura
+        }
+    }
+
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_1_8
+        targetCompatibility JavaVersion.VERSION_1_8
+    }
+
+    lint {
+        checkReleaseBuilds false
+        abortOnError false
+    }
+}
